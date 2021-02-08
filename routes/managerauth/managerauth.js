@@ -52,16 +52,73 @@ router.post("/register", adminVerify, async (req, res) => {
     const { error } = await registerSchema.validateAsync(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     else {
-      //NEW USER IS ADDED
+      //NEW USER IS ADDED IN THE COLLECTION 'user'
+      let randomString = await bcrypt.genSalt(8); 
+      user["activateString"] = randomString;
+      await user.save();
+      
+      let activateURL = process.env.baseURL + '/admin/activateAccount';
+      const data = await User.findOne({ email: req.body.email });
+      activateURL = activateURL+"?id="+data._id+"&ac="+randomString
+      
+      let activateMail = '<p>Hi,</p>'
+              + '<p>Please click on the link below to activate your account</p>'
+              + '<a target="_blank" href='+ activateURL +' >' +  activateURL + '</a>'
+              + '<p>Regards,</p>'
 
-      const saveUser = await user.save();
-      //   res.send({ user: user._id });
-      res.send("user created");
+      const sendMail = require('../services/mailService');
+            
+      sendMail({
+        from: process.env.EMAIL,
+        to: req.body.email,
+        subject: 'CRM Account Activation',
+        text: `${activateURL}`,
+        html: `${activateMail}`,
+      })
+      .then(() => {
+        console.log("sukriti sent email");
+        return res.json({success: true});
+      })
+      .catch(err => {
+        console.log("sukriti sneding email:" + err);
+        return res.status(500).json({error: 'Error in sending activation mail .'});
+      });
+         
+      
     }
   } catch (error) {
+    console.log("error while registering is: ", error);
     res.status(400).send(error);
   }
 });
+
+
+// Activate Account of a USER
+router.post("/activate_account", async (req, res) => {
+  try {
+    let user = await User.findOne({ _id: objectId(req.body.objectId) });
+    
+    if (user.activateString === req.body.randomString) {
+      user["isActivated"] = "true";
+    
+      await user.save();
+      res.status(200).json({ message: "Account activated successfully" });
+    } 
+    else {
+      res.status(401).json({
+        message: "You are not authorized",
+      });
+    }
+    
+  } catch (error) {
+    res.status(500).json({
+        message: "Internal Server Error"
+    });
+  }
+});
+
+
+
 
 //SIGNIN USER
 
@@ -83,7 +140,7 @@ router.post("/login", async (req, res) => {
     if (error) return res.status(400).send(error.details[0].message);
     else {
       console.log(user.type);
-      if (user.type === "manager") {
+      if (user.isActivated==="true" && user.type === "manager") {
         const token = jwt.sign(
           { _id: user._id },
           process.env.MANAGER_TOKEN_SECRET

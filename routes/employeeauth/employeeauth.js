@@ -23,11 +23,11 @@ const loginSchema = Joi.object({
   password: Joi.string().min(6).required(),
 });
 
-//ADMIN TOKEN VERIFICATIOn
-const adminVerify = require("../adminauth/adminverfiy");
+//ADMIN/MANAGER TOKEN VERIFICATIOn
+const registerVerify = require("./registerVerify");
 
 //SIGNUP USER
-router.post("/register", adminVerify, async (req, res) => {
+router.post("/register", registerVerify, async (req, res) => {
 
   //CHECKING IF USER EMAIL ALREADY EXISTS
   const emailExist = await User.findOne({ email: req.body.email });
@@ -57,15 +57,74 @@ router.post("/register", adminVerify, async (req, res) => {
       return res.status(400).send(error.details[0].message);
     }
     else {
-      //NEW USER IS ADDED
-      const saveUser = await user.save();
-      res.send("user created");
+      //NEW USER IS ADDED IN THE COLLECTION 'user'
+      let randomString = await bcrypt.genSalt(8); 
+      user["activateString"] = randomString;
+      await user.save();
+      
+      let activateURL = process.env.baseURL + '/employee/activateAccount';
+      const data = await User.findOne({ email: req.body.email });
+      activateURL = activateURL+"?id="+data._id+"&ac="+randomString
+      
+      let activateMail = '<p>Hi,</p>'
+              + '<p>Please click on the link below to activate your account</p>'
+              + '<a target="_blank" href='+ activateURL +' >' +  activateURL + '</a>'
+              + '<p>Regards,</p>'
+
+      const sendMail = require('../services/mailService');
+            
+      sendMail({
+        from: process.env.EMAIL,
+        to: req.body.email,
+        subject: 'CRM Account Activation',
+        text: `${activateURL}`,
+        html: `${activateMail}`,
+      })
+      .then(() => {
+        console.log("sukriti sent email");
+        return res.json({success: true});
+      })
+      .catch(err => {
+        console.log("sukriti sneding email:" + err);
+        return res.status(500).json({error: 'Error in sending activation mail .'});
+      });
+         
+      
     }
   } catch (error) {
-    console.log("Check4: error is: "+ error);
+    console.log("error while registering is: ", error);
     res.status(400).send(error);
   }
 });
+
+
+// Activate Account of a USER
+router.post("/activate_account", async (req, res) => {
+  try {
+    // console.log("call reached activate_account");
+    let user = await User.findOne({ _id: objectId(req.body.objectId) });
+    
+    if (user.activateString === req.body.randomString) {
+      user["isActivated"] = "true";
+    
+      await user.save();
+      res.status(200).json({ message: "Account activated successfully" });
+    } 
+    else {
+      res.status(401).json({
+        message: "You are not authorized",
+      });
+    }
+    
+  } catch (error) {
+    res.status(500).json({
+        message: "Internal Server Error"
+    });
+  }
+});
+
+
+
 
 //SIGNIN USER
 
@@ -76,21 +135,21 @@ router.post("/login", async (req, res) => {
   if (!user) return res.status(400).send("Incorrect Email- ID");
 
   //CHECKING IF USER PASSWORD MATCHES
-  let salt = await bcrypt.genSalt(10); 
-  let encryptedPassword = await bcrypt.hash(req.body.password, salt);
-  console.log("encrypted entered password is: " + encryptedPassword);
+  
   const validPassword = await bcrypt.compare(req.body.password, user.password);
   if (!validPassword){
     console.log("req.body.password is: " + req.body.password + " and password in db is:" + user.password);
     return res.status(400).send("Incorrect Password");
   } 
+
   try {
+
     //VALIDATION OF USER INPUTS
     const { error } = await loginSchema.validateAsync(req.body);
-    console.log("reaching here: ");
+    // console.log("reaching here: ");
     if (error) return res.status(400).send(error.details[0].message);
     else {
-      if (user.type === "employee") {
+      if (user.isActivated==="true" && user.type === "employee") {
         const token = jwt.sign(
           { _id: user._id },
           process.env.EMPLOYEE_TOKEN_SECRET

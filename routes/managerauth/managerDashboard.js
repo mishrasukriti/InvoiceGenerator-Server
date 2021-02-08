@@ -4,40 +4,37 @@
 
 const router = require("express").Router();
 const verify = require("./managerverify");
-const ServiceRequest = require("../../models/ServiceRequest");
-const Lead = require("../../models/Lead");
-const Contact = require("../../models/Contact");
+const Invoice = require("../../models/Invoice");
 const sendMail = require("../../sampleMail");
 
 //VALIDATION OF USER INPUTS PREREQUISITES
 const Joi = require("@hapi/joi");
 
-const serviceRequestSchema = Joi.object({
-  title: Joi.string().min(3).required(),
-  client: Joi.string().min(3).required(),
-  manager: Joi.string().min(3).required(),
-  expected_revenue: Joi.number().min(2).required(),
-  probability: Joi.number().required(),
-  status: Joi.string().min(2).required(),
-  expected_closing: Joi.date().required(),
-  priority: Joi.string().min(2).required(),
+const invoiceSchema = Joi.object({
+  invoiceNumber: Joi.number().min(3).required(),
+  clientName: Joi.string().min(3).required(),
+  clientAddress: Joi.string().min(3).required(),
+  clientEmail: Joi.string().min(3).required,
+  clientNumber: Joi.number().min(3).required(),
+  dueDate: Joi.date().required(),
+  products:Joi.array().required(),
   senderEmail: Joi.string().min(2),
 });
 
 //SERVICE REQUEST API'S
 
 //POST
-router.post("/servicerequest", verify, async (req, res) => {
-  console.log("inside serviceRequest initially mail of person adding req is: "+ req.body.senderEmail);
-  const ticket = new ServiceRequest({
-    title: req.body.title,
-    client: req.body.client,
-    manager: req.body.manager,
-    expected_revenue: req.body.expected_revenue,
-    probability: req.body.probability,
-    status: req.body.status,
-    expected_closing: req.body.expected_closing,
-    priority: req.body.priority,
+router.post("/invoice", verify, async (req, res) => {
+  console.log("inside invoice api initially mail of person adding req is: "+ req.body.senderEmail);
+  const ticket = new Invoice({
+    invoiceNumber: req.body.invoiceNumber,
+    clientName: req.body.clientName,
+    clientAddress: req.body.clientAddress,
+    clientEmail: req.body.clientEmail,
+    clientNumber: req.body.clientNumber,
+    dueDate: req.body.dueDate,
+    products: req.body.products,
+    senderEmail: req.body.senderEmail,
   });
 
   try {
@@ -48,36 +45,56 @@ router.post("/servicerequest", verify, async (req, res) => {
       return res.status(400).send(error.details[0].message);
     }
     else {
-      //NEW SERVICE REQUEST  IS ADDED
+      //NEW INVOICE  IS ADDED
+      let currentDate = new Date();
+      ticket.create_time = new Date(currentDate.toISOString());
+      let arr = req.body.products;
+      let total = 0;
+      for(let i=0; i<arr.length; i++){
+        total+= arr[i].quantity * arr[i].price;
+      }
+      total = (total*11)/10;
+      
+      ticket.totalPrice = total;
+      await ticket.save();
 
-      const saveTicket = await ticket.save();
+      console.log("mail of person adding req is: "+ req.body.senderEmail);
+      const senderEmail = req.body.senderEmail;
 
-      const email = req.body.senderEmail;
-      const mailData = {
-        subject: "New Service Request Added by Manager",
-        message: "has created a new service request",
-        email:  email
-      }
-      // let mailResponse = {};
-      const sendEmailResponse = await sendMail(mailData);
-      if(sendEmailResponse.resMsg=== "Verification mail sent"){
-        res.send("service request created");
-      }
-      else {
-        // console.log("mail sending error "+ sendEmailResponse.resMsg);
-        res.status(400).send(sendEmailResponse.resMsg);
-      }
+      let sampleMail = '<p>Hi, </p>'
+                    +`<p>This mail is to inform you, that ${senderEmail} has created a new Invoice</p>`
+                    +'<p>Regards</p>'
+
+      const sendMail = require('../services/mailService');
+            
+      sendMail({
+        from: process.env.EMAIL,
+        to: `sukritippl@gmail.com, jayanttiwari8@gmail.com, ${req.body.clientEmail}`,
+        subject: 'New Invoice Added by Employee',
+        text: `Invoice Added`,
+        html: `${sampleMail}`,
+      })
+      .then(() => {
+        console.log("sukriti sent email");
+        res.send("Invoice created");
+      })
+      .catch((err) => {
+        console.log("mail sending error "+ err);
+        res.status(400).send(err);
+      });
     }
-  } catch (error) {
+  }
+   catch (error) {
+    console.log("error in add invoice api's catch is: "+ error);
     res.status(400).send(error);
   }
 });
 
 //GET
 
-router.get("/servicerequest", verify, async (req, res) => {
+router.get("/invoice", verify, async (req, res) => {
   try {
-    const tickets = await ServiceRequest.find().exec();
+    const tickets = await Invoice.find().exec();
     res.status(200).send(tickets);
   } catch (error) {
     console.log(error);
@@ -87,16 +104,16 @@ router.get("/servicerequest", verify, async (req, res) => {
 
 //PUT
 
-router.put("/servicerequest/:id", async (req, res) => {
+router.put("/invoice/:id", async (req, res) => {
   try {
-    const tickets = await ServiceRequest.findById(req.params.id).exec();
+    const tickets = await Invoice.findById(req.params.id).exec();
     tickets.set(req.body);
     const result = await tickets.save();
 
     const email = req.body.senderEmail;
       const mailData = {
-        subject: "Service Request Updated by Manager",
-        message: "has updated a service request",
+        subject: "Invoice Updated by Manager",
+        message: "has updated an Invoice",
         email:  email
       }
       
@@ -106,7 +123,7 @@ router.put("/servicerequest/:id", async (req, res) => {
         res.send(result);
       }
       else {
-        // console.log("mail sending error "+ sendEmailResponse.resMsg);
+        console.log("mail sending error "+ sendEmailResponse.resMsg);
         res.status(400).send(sendEmailResponse.resMsg);
       }
     
@@ -115,184 +132,53 @@ router.put("/servicerequest/:id", async (req, res) => {
   }
 });
 
-//VALIDATION OF USER INPUTS PREREQUISITES
 
-const LeadSchema = Joi.object({
-  title: Joi.string().min(3).required(),
-  client: Joi.string().min(3).required(),
-  number: Joi.number().min(3).required(),
-  status: Joi.string().min(2).required(),
-  senderEmail: Joi.string().min(2),
-});
 
-//LEAD API'S
-
-//POST
-
-router.post("/lead", verify, async (req, res) => {
-  const lead = new Lead({
-    title: req.body.title,
-    client: req.body.client,
-    number: req.body.number,
-    status: req.body.status,
-  });
-
+//USERS
+router.get("/users", verify, async (req, res) => {
   try {
-    //VALIDATION OF USER INPUTS
-
-    const { error } = await LeadSchema.validateAsync(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-    else {
-      //NEW LEAD IS ADDED
-
-      const leads = await lead.save();
-
-      const email = req.body.senderEmail;
-      const mailData = {
-        subject: "New Lead Added by Manager",
-        message: "has created a new Lead",
-        email:  email
-      }
-      
-      const sendEmailResponse = await sendMail(mailData);
-      
-      if(sendEmailResponse.resMsg=== "Verification mail sent"){
-        res.send("Lead created");
-      }
-      else {
-        res.status(400).send(sendEmailResponse.resMsg);
-      }
-    
-    }
+    const users = await User.find().exec();
+    res.status(200).send(users);
   } catch (error) {
+    console.log(error);
     res.status(400).send(error);
   }
 });
 
-//GET
 
-router.get("/lead", verify, async (req, res) => {
-  try {
-    const leads = await Lead.find().exec();
-    res.status(200).send(leads);
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-//PUT
-
-router.put("/lead/:id", async (req, res) => {
-  try {
-    const leads = await Lead.findById(req.params.id).exec();
-    leads.set(req.body);
-    const result = await leads.save();
-
-    const email = req.body.senderEmail;
-    const mailData = {
-      subject: "Lead Updated by Manager",
-      message: "has updated a Lead",
-      email:  email
-    }
-    
-    const sendEmailResponse = await sendMail(mailData);
-    if(sendEmailResponse.resMsg=== "Verification mail sent"){
-      res.send(result);
-    }
-    else {
-      res.status(400).send(sendEmailResponse.resMsg);
-    }
-  
-    
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-//VALIDATION OF USER INPUTS PREREQUISITES
-
-const ContactSchema = Joi.object({
-  title: Joi.string().min(3).required(),
-  client: Joi.string().min(3).required(),
-  email: Joi.string().min(2).required().email(),
-  number: Joi.number().min(3).required(),
-  address: Joi.string().min(2).required(),
-});
-
-//CONTACT API'S
-
-//POST
-
-router.post("/contact", verify, async (req, res) => {
-  const contact = new Contact({
-    title: req.body.title,
-    client: req.body.client,
-    email: req.body.email,
-    number: req.body.number,
-    address: req.body.address,
-  });
-
-  try {
-    //VALIDATION OF USER INPUTS
-
-    const { error } = await ContactSchema.validateAsync(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
-    else {
-      //NEW CONTACT IS ADDED
-
-      const contacts = await contact.save();
-      res.send("Contact created");
-    }
-  } catch (error) {
-    res.status(400).send(error);
-  }
-});
-
-//GET
-
-router.get("/contact", verify, async (req, res) => {
-  try {
-    const contacts = await Contact.find().exec();
-    res.status(200).send(contacts);
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-//PUT
-
-router.put("/contact/:id", async (req, res) => {
-  try {
-    const contacts = await Contact.findById(req.params.id).exec();
-    contacts.set(req.body);
-    const result = await contacts.save();
-    res.send(result);
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
-
-// API TO GET COUNT OF SEVICE-REQUEST, LEAD AND COUNT
-
+// API TO GET COUNT OF INVOICE GENERATED IN ONE DAY
 
 router.get("/getCount", verify, async (req, res) => {
   try {
+    let currentDate = new Date()
+    let oneDay = new Date()
+    oneDay.setDate(oneDay.getDate() - 1);
+
+    const tickets = await Invoice.find({create_time:{
+      $gte: new Date(oneDay.toISOString()),
+      $lte: new Date(currentDate.toISOString())
+    }}).exec();
     
-    const tickets = await ServiceRequest.find().exec();
-    const leads = await Lead.find().exec();
-    const contacts = await Contact.find().exec();
-    const serviceRequestCount= tickets.length;
-    const leadCount = leads.length;
-    const contactCount = contacts.length;
+    const invoiceCount= tickets.length;
     const count = {
-      serviceRequestCount,
-      leadCount,
-      contactCount
+      invoiceCount,   
     }
-    
+    console.log("generated invoice count is: "+ invoiceCount);
     res.status(200).send(count);
   } catch (error) {
-    console.log("error in count: "+error);
+    console.log(error);
+    res.status(400).send(error);
+  }
+});
+
+// API TO SEARCH INVOICE BASED ON INVOICE NUMBER
+
+router.get("/searchInvoice", verify, async (req, res) => {
+  try {
+    const invoice = await Invoice.find({ invoiceNumber: req.body.invoiceNumber }).exec();
+    res.status(200).send(invoice);
+  } catch (error) {
+    console.log(error);
     res.status(400).send(error);
   }
 });

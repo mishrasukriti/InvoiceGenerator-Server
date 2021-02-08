@@ -39,6 +39,15 @@ const userSchema = new mongoose.Schema({
   randomString: {
     type: String
   },
+  isActivated: {
+    type: String
+  },
+  activateString: {
+    type: String,
+    required: true,
+    max: 10,
+    min: 2,
+  },
   date: {
     type: Date,
     default: Date.now(),

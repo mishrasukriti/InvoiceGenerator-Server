@@ -23,29 +23,6 @@ const loginSchema = Joi.object({
   password: Joi.string().min(6).required(),
 });
 
-var transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-  auth: {
-    type: 'OAuth2',
-         user: process.env.EMAIL,
-         pass: process.env.PASSWORD
-     }
- });
-
- const mailOptions = {
-  from: process.env.EMAIL, 
-  to: process.env.EMAIL, 
-  subject: 'Password reset', 
-  html: ''
-};
-
-let sampleMail = '<p>Hi, </p>'
-                 +'<p>Please click on this link to reset password</p>'
-                 +'<a target="blank" href="urlToBeReplaced">urlToBeReplaced</a>'
-                 +'<p>Regards</p>'
 
 //SIGNUP USER
 router.post("/register", async (req, res) => {
@@ -74,15 +51,73 @@ router.post("/register", async (req, res) => {
     const { error } = await registerSchema.validateAsync(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     else {
+      
       //NEW USER IS ADDED IN THE COLLECTION 'user'
-      const saveUser = await user.save();
+      let randomString = await bcrypt.genSalt(8); 
+      user["activateString"] = randomString;
+      await user.save();
+      
+      let activateURL = process.env.baseURL + '/admin/activateAccount';
+      const data = await User.findOne({ email: req.body.email });
+      activateURL = activateURL+"?id="+data._id+"&ac="+randomString
+      
+      let activateMail = '<p>Hi,</p>'
+              + '<p>Please click on the link below to activate your account</p>'
+              + '<a target="_blank" href='+ activateURL +' >' +  activateURL + '</a>'
+              + '<p>Regards,</p>'
 
-      res.send("user created");
+      const sendMail = require('../services/mailService');
+            
+      sendMail({
+        from: process.env.EMAIL,
+        to: req.body.email,
+        subject: 'CRM Account Activation',
+        text: `${activateURL}`,
+        html: `${activateMail}`,
+      })
+      .then(() => {
+        console.log("sukriti sent email");
+        return res.json({success: true});
+      })
+      .catch(err => {
+        console.log("sukriti sneding email:" + err);
+        return res.status(500).json({error: 'Error in sending activation mail .'});
+      });
+         
+      
     }
   } catch (error) {
+    console.log("error while registering is: ", error);
     res.status(400).send(error);
   }
 });
+
+
+// Activate Account of a USER
+router.post("/activate_account", async (req, res) => {
+  try {
+    let user = await User.findOne({ _id: objectId(req.body.objectId) });
+    
+    if (user.activateString === req.body.randomString) {
+      user["isActivated"] = "true";
+    
+      await user.save();
+      res.status(200).json({ message: "Account activated successfully" });
+    } 
+    else {
+      res.status(401).json({
+        message: "You are not authorized",
+      });
+    }
+    
+  } catch (error) {
+    res.status(500).json({
+        message: "Internal Server Error"
+    });
+  }
+});
+
+
 
 //SIGNIN USER
 
@@ -110,14 +145,15 @@ router.post("/login", async (req, res) => {
       return res.status(400).send({ message: error.details[0].message });
     else {
       
-      if (user.type === "admin") {
+      if (user.isActivated==="true"  && user.type === "admin") {
         const token = jwt.sign(
           { _id: user._id },
           process.env.ADMIN_TOKEN_SECRET
         );
         res.status(200).header("auth-token", token).send(token);
-      } else {
-        res.status(200).json({ message: "Seems like you are not a admin" });
+      } 
+      else {
+        res.status(200).json({ message: "Seems like you are not a admin or your account is not active" });
       }
     }
   } catch (error) {
@@ -144,7 +180,7 @@ router.put("/changePassword", async (req, res) => {
             const sendMail = require('../services/mailService');
             
             sendMail({
-              from: "sukritippl@gmail.com",
+              from: process.env.EMAIL,
               to: req.body.email,
               subject: 'CRM Reset Password',
               text: `${resetURL}`,
@@ -212,7 +248,7 @@ router.put("/changePassword", async (req, res) => {
             const sendMail = require('../services/mailService');
             
             sendMail({
-              from: "sukritippl@gmail.com",
+              from: process.env.EMAIL,
               to: req.body.email,
               subject: 'CRM Reset Password',
               text: `${resetURL}`,
