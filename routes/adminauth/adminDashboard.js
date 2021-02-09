@@ -2,6 +2,14 @@
 
 //ADMIN CAN EDIT,VIEW,DELETE AND ADD
 
+// var express = require('express'),
+// app = express(),
+
+path = require('path')
+bodyParser = require('body-parser');
+var pdf = require("pdf-creator-node");
+var fs = require('fs');
+
 const router = require("express").Router();
 const verify = require("./adminverfiy");
 const Invoice = require("../../models/Invoice");
@@ -12,13 +20,13 @@ const sendMail = require("../../sampleMail");
 const Joi = require("@hapi/joi");
 
 const invoiceSchema = Joi.object({
-  invoiceNumber: Joi.number().min(3).required(),
+  invoiceNumber: Joi.string().min(3).required(),
   clientName: Joi.string().min(3).required(),
   clientAddress: Joi.string().min(3).required(),
-  clientEmail: Joi.string().min(3).required,
+  clientEmail: Joi.string().min(3).required(),
   clientNumber: Joi.number().min(3).required(),
   dueDate: Joi.date().required(),
-  products:Joi.array().required(),
+  products: Joi.array().required(),
   senderEmail: Joi.string().min(2),
 });
 
@@ -26,7 +34,7 @@ const invoiceSchema = Joi.object({
 
 //POST
 router.post("/invoice", verify, async (req, res) => {
-  console.log("inside invoice initially mail of person adding req is: "+ req.body.senderEmail);
+  console.log("inside invoice initially mail of person adding req is: " + req.body.senderEmail);
   const ticket = new Invoice({
     invoiceNumber: req.body.invoiceNumber,
     clientName: req.body.clientName,
@@ -41,7 +49,7 @@ router.post("/invoice", verify, async (req, res) => {
   try {
     //VALIDATION OF USER INPUTS
 
-    const { error } = await serviceRequestSchema.validateAsync(req.body);
+    const { error } = await invoiceSchema.validateAsync(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     else {
       //NEW INVOICE  IS ADDED IN THE COLLECTION 
@@ -49,23 +57,23 @@ router.post("/invoice", verify, async (req, res) => {
       ticket.create_time = new Date(currentDate.toISOString());
       let arr = req.body.products;
       let total = 0;
-      for(let i=0; i<arr.length; i++){
-        total+= arr[i].quantity * arr[i].price;
+      for (let i = 0; i < arr.length; i++) {
+        total += arr[i].quantity * arr[i].price;
       }
-      total = (total*11)/10;
-      
+      total = (total * 11) / 10;
+
       ticket.totalPrice = total;
       await ticket.save();
-      
-      console.log("mail of person adding req is: "+ req.body.senderEmail);
+
+      console.log("mail of person adding req is: " + req.body.senderEmail);
       const senderEmail = req.body.senderEmail;
 
       let sampleMail = '<p>Hi, </p>'
-                    +`<p>This mail is to inform you, that ${senderEmail} has created a new Invoice</p>`
-                    +'<p>Regards</p>'
+        + `<p>This mail is to inform you, that ${senderEmail} has created a new Invoice</p>`
+        + '<p>Regards</p>'
 
       const sendMail = require('../services/mailService');
-            
+
       sendMail({
         from: process.env.EMAIL,
         to: `sukritippl@gmail.com, jayanttiwari8@gmail.com, ${req.body.clientEmail}`,
@@ -73,18 +81,18 @@ router.post("/invoice", verify, async (req, res) => {
         text: `Invoice Added`,
         html: `${sampleMail}`,
       })
-      .then(() => {
-        console.log("sukriti sent email");
-        res.send("Invoice created");
-      })
-      .catch((err) => {
-        console.log("mail sending error "+ err);
-        res.status(400).send(err);
-      });
+        .then(() => {
+          console.log("sukriti sent email");
+          res.send("Invoice created");
+        })
+        .catch((err) => {
+          console.log("mail sending error " + err);
+          res.status(400).send(err);
+        });
 
     }
   } catch (error) {
-    console.log("error in add invoice api's catch is: "+ error);
+    console.log("error in add invoice api's catch is: " + error);
     res.status(400).send(error);
   }
 });
@@ -118,28 +126,38 @@ router.delete("/invoice", verify, async (req, res) => {
 router.put("/invoice/:id", async (req, res) => {
   try {
     const tickets = await Invoice.findById(req.params.id).exec();
-    tickets.set(req.body);
+    let invoiceData = req.body;
+    let arr = req.body.products;
+    let total = 0;
+    for (let i = 0; i < arr.length; i++) {
+      total += arr[i].quantity * arr[i].price;
+    }
+    total = (total * 11) / 10;
+
+    invoiceData.totalPrice = total;
+
+    tickets.set(invoiceData);
     const result = await tickets.save();
 
     const email = req.body.senderEmail;
     const mailData = {
       subject: "Invoice Updated by Admin",
       message: "has updated an Invoice",
-      email:  email
+      email: email
     }
-    
+
     const sendEmailResponse = await sendMail(mailData);
-    console.log("email sending response is "+ JSON.stringify(sendEmailResponse));
-    if(sendEmailResponse.resMsg=== "Verification mail sent"){
+    console.log("email sending response is " + JSON.stringify(sendEmailResponse));
+    if (sendEmailResponse.resMsg === "Verification mail sent") {
       res.send(result);
     }
     else {
-      console.log("mail sending error "+ sendEmailResponse.resMsg);
+      console.log("mail sending error " + sendEmailResponse.resMsg);
       res.status(400).send(sendEmailResponse.resMsg);
     }
-    
+
   } catch (error) {
-    console.log(" error in catch of update invoice is "+ error);
+    console.log(" error in catch of update invoice is " + error);
     res.status(500).send(error);
   }
 });
@@ -165,16 +183,18 @@ router.get("/getCount", verify, async (req, res) => {
     let oneDay = new Date()
     oneDay.setDate(oneDay.getDate() - 1);
 
-    const tickets = await Invoice.find({create_time:{
-      $gte: new Date(oneDay.toISOString()),
-      $lte: new Date(currentDate.toISOString())
-    }}).exec();
-    
-    const invoiceCount= tickets.length;
+    const tickets = await Invoice.find({
+      create_time: {
+        $gte: new Date(oneDay.toISOString()),
+        $lte: new Date(currentDate.toISOString())
+      }
+    }).exec();
+
+    const invoiceCount = tickets.length;
     const count = {
-      invoiceCount,   
+      invoiceCount,
     }
-    console.log("generated invoice count is: "+ invoiceCount);
+    console.log("generated invoice count is: " + invoiceCount);
     res.status(200).send(count);
   } catch (error) {
     console.log(error);
@@ -193,6 +213,47 @@ router.get("/searchInvoice", verify, async (req, res) => {
     res.status(400).send(error);
   }
 });
+
+
+// API TO GENERATE PDF
+router.post('/genearatePDF',  async (req, res) => {
+
+  console.log(JSON.stringify(req.body));
+  // Read HTML Template
+  var html = fs.readFileSync('template.html', 'utf8');
+  var options = {
+    format: "A3",
+    orientation: "portrait",
+    border: "10mm",
+    header: {
+      height: "45mm",
+
+    }
+  };
+
+
+  var document = {
+    html: html,
+    data: {
+      intro: "Invoice app",
+      data: req.body
+    },
+    path: `./GeneratedPDF/${req.body.invoiceNumber}.pdf`
+  };
+
+
+  pdf.create(document, options)
+    .then(res1 => {
+      console.log(res1)
+      res.status(200).send("done !!")
+    })
+    .catch(error => {
+      console.error(error)
+    });
+
+})
+
+
 
 
 module.exports = router;

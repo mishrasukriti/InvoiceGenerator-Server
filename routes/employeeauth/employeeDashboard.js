@@ -1,6 +1,13 @@
 //EMPLOYEE DASHBOARD
 
-//EMPLOYEE CAN VIEW
+//EMPLOYEE CAN VIEW AND WITH SPECIAL ACCESS CAN ALSO UPDATE, SEARCH AND CREATE INVOICE
+
+
+path = require('path')
+bodyParser = require('body-parser');
+var pdf = require("pdf-creator-node");
+var fs = require('fs');
+
 
 const router = require("express").Router();
 const verify = require("./employeeverify");
@@ -107,8 +114,19 @@ router.get("/invoice", verify, async (req, res) => {
 router.put("/invoice/:id", async (req, res) => {
   try {
     const tickets = await Invoice.findById(req.params.id).exec();
-    tickets.set(req.body);
+    let invoiceData = req.body;
+    let arr = req.body.products;
+    let total = 0;
+    for (let i = 0; i < arr.length; i++) {
+      total += arr[i].quantity * arr[i].price;
+    }
+    total = (total * 11) / 10;
+
+    invoiceData.totalPrice = total;
+
+    tickets.set(invoiceData);
     const result = await tickets.save();
+
     const email = req.body.senderEmail;
       const mailData = {
         subject: "Service Request Updated by Employee",
@@ -170,6 +188,45 @@ router.get("/searchInvoice", verify, async (req, res) => {
     res.status(400).send(error);
   }
 });
+
+
+// API TO GENERATE PDF
+router.post('/genearatePDF',  async (req, res) => {
+
+  console.log(JSON.stringify(req.body));
+  // Read HTML Template
+  var html = fs.readFileSync('template.html', 'utf8');
+  var options = {
+    format: "A3",
+    orientation: "portrait",
+    border: "10mm",
+    header: {
+      height: "45mm",
+
+    }
+  };
+
+
+  var document = {
+    html: html,
+    data: {
+      intro: "Invoice app",
+      data: req.body
+    },
+    path: `./GeneratedPDF/${req.body.invoiceNumber}.pdf`
+  };
+
+
+  pdf.create(document, options)
+    .then(res1 => {
+      console.log(res1)
+      res.status(200).send("done !!")
+    })
+    .catch(error => {
+      console.error(error)
+    });
+
+})
 
 
 

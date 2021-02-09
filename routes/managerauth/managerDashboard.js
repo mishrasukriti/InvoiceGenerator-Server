@@ -2,19 +2,27 @@
 
 //MANAGER CAN EDIT, ADD AND VIEW
 
+
+path = require('path')
+bodyParser = require('body-parser');
+var pdf = require("pdf-creator-node");
+var fs = require('fs');
+
+
 const router = require("express").Router();
 const verify = require("./managerverify");
 const Invoice = require("../../models/Invoice");
 const sendMail = require("../../sampleMail");
+const User = require("../../models/User");
 
 //VALIDATION OF USER INPUTS PREREQUISITES
 const Joi = require("@hapi/joi");
 
 const invoiceSchema = Joi.object({
-  invoiceNumber: Joi.number().min(3).required(),
+  invoiceNumber: Joi.string().min(3).required(),
   clientName: Joi.string().min(3).required(),
   clientAddress: Joi.string().min(3).required(),
-  clientEmail: Joi.string().min(3).required,
+  clientEmail: Joi.string().min(3).required(),
   clientNumber: Joi.number().min(3).required(),
   dueDate: Joi.date().required(),
   products:Joi.array().required(),
@@ -40,7 +48,7 @@ router.post("/invoice", verify, async (req, res) => {
   try {
     //VALIDATION OF USER INPUTS
 
-    const { error } = await serviceRequestSchema.validateAsync(req.body);
+    const { error } = await invoiceSchema.validateAsync(req.body);
     if (error){
       return res.status(400).send(error.details[0].message);
     }
@@ -107,7 +115,18 @@ router.get("/invoice", verify, async (req, res) => {
 router.put("/invoice/:id", async (req, res) => {
   try {
     const tickets = await Invoice.findById(req.params.id).exec();
-    tickets.set(req.body);
+
+    let invoiceData = req.body;
+    let arr = req.body.products;
+    let total = 0;
+    for (let i = 0; i < arr.length; i++) {
+      total += arr[i].quantity * arr[i].price;
+    }
+    total = (total * 11) / 10;
+
+    invoiceData.totalPrice = total;
+
+    tickets.set(invoiceData);
     const result = await tickets.save();
 
     const email = req.body.senderEmail;
@@ -182,6 +201,45 @@ router.get("/searchInvoice", verify, async (req, res) => {
     res.status(400).send(error);
   }
 });
+
+
+// API TO GENERATE PDF
+router.post('/genearatePDF',  async (req, res) => {
+
+  console.log(JSON.stringify(req.body));
+  // Read HTML Template
+  var html = fs.readFileSync('template.html', 'utf8');
+  var options = {
+    format: "A3",
+    orientation: "portrait",
+    border: "10mm",
+    header: {
+      height: "45mm",
+
+    }
+  };
+
+
+  var document = {
+    html: html,
+    data: {
+      intro: "Invoice app",
+      data: req.body
+    },
+    path: `./GeneratedPDF/${req.body.invoiceNumber}.pdf`
+  };
+
+
+  pdf.create(document, options)
+    .then(res1 => {
+      console.log(res1)
+      res.status(200).send("done !!")
+    })
+    .catch(error => {
+      console.error(error)
+    });
+
+})
 
 
 
