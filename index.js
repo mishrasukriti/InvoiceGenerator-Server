@@ -7,6 +7,14 @@ const PORT = process.env.PORT || 4050;
 
 //IMPORT ROUTES
 
+
+//SETTING MIDDLEWARE
+
+// app.use(express.static(__dirname + 'GeneratedPDF'));
+app.use(express.json(), cors());
+app.use(cors()) 
+app.use(express.static('GeneratedPDF'));
+
 const adminRoute = require("./routes/adminauth/adminauth");
 const managerRoute = require("./routes/managerauth/managerauth");
 const employeeRoute = require("./routes/employeeauth/employeeauth");
@@ -24,8 +32,7 @@ mongoose.connect(
   () => console.log("connected to db  ")
 );
 
-//MIDDLEWARE
-app.use(express.json(), cors());
+
 
 //ROUTE MIDDLEWARE
 

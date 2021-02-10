@@ -1,69 +1,128 @@
-
-
 <!DOCTYPE html>
 <html>
+
 <head>
-     <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
 
-<!-- jQuery library -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <!-- jQuery library -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-<!-- Latest compiled JavaScript -->
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script> 
-<style>
-.card {
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-  max-width: 300px;
-  margin: auto;
-  text-align: center;
-  font-family: arial;
-}
+  <!-- Latest compiled JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+  <style>
+    .card {
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      max-width: 300px;
+      margin: auto;
+      text-align: center;
+      font-family: arial;
+    }
 
-.title {
-  color: grey;
-  font-size: 18px;
-}
+    .title {
+      color: grey;
+      font-size: 18px;
+    }
 
-button {
-  border: none;
-  outline: 0;
-  display: inline-block;
-  padding: 8px;
-  color: white;
-  background-color: #000;
-  text-align: center;
-  cursor: pointer;
-  width: 100%;
-  font-size: 18px;
-}
+    button {
+      border: none;
+      outline: 0;
+      display: inline-block;
+      padding: 8px;
+      color: white;
+      background-color: #000;
+      text-align: center;
+      cursor: pointer;
+      width: 100%;
+      font-size: 18px;
+    }
 
-a {
-  text-decoration: none;
-  font-size: 22px;
-  color: black;
-}
+    a {
+      text-decoration: none;
+      font-size: 22px;
+      color: black;
+    }
 
-button:hover, a:hover {
-  opacity: 0.7;
-}
-</style>
+    button:hover,
+    a:hover {
+      opacity: 0.7;
+    }
+
+    #top-strip {
+      background-color: cornflowerblue;
+      height: 30px;
+    }
+    #logo1{
+      width: 100px!important;
+      /* max-width: 190px; */
+      float: right;
+    }
+
+    
+  </style>
 </head>
+
+<script>
+  const convertDate = (date) => {
+    const dates = new Date(date);
+    const formattedDate = Intl.DateTimeFormat("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }).format(dates);
+    return formattedDate;
+  };
+</script>
+
 <body>
+  <div id="top-strip"></div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <h2>Invoice</h2>
+      </div>
+      <div class="col-md-6">
+        <div class="row"> <img id="logo1" class="img-responsive" src="https://miro.medium.com/max/500/1*cPh7ujRIfcHAy4kW2ADGOw.png" /></div>
+        <h3 style="text-align: right;">Vista Pvt Lmt</h3>
+      </div>
 
-<div class="card">
-  
-    <h1 style="color:lightseagreen">{{data.clientName}}</h1>
-  <p class="title">Vista Pvt Lmt.</p>
- 
+    </div>
+    <hr/>
+    <div class="row">
+      <div class="col-sm-6 col-xs-6 col-md-6">
+       <div>From</div>
+       <h4>Vista Pvt Lmt</h4>
+       <div>vistaadmin@gmail.com</div>
+       <div>Alison road, UK</div>
+       <div>+9144 25209999</div>
+      </div>
+      <div class="col-sm-6 col-xs-6 col-md-6">
+        <div>For</div>
+        <h4>{{data.clientName}}</h4>
+        <div>{{data.clientName}}vistaadmin@gmail.com</div>
+        <div>{{data.clientAddress}}</div>
+        <div>{{data.clientNumber}}</div>
+       </div>
+      
+    </div>
+    <hr/>
 
- 
-  
-  </ul>
-</div>
+    <div class="row">
+      <div class="col-sm-1 col-xs-1 col-md-1">
+       <div>Number</div>
+       <div>Date</div>
+       <div>Due</div>
+      </div>
 
-<div class="container">
-              
+      <div class="col-sm-4 col-xs-4 col-md-4">
+        <div>{{data.invoiceNumber}}</div>
+        <div>{{data.create_time}}</div>
+        <div>{{data.dueDate}}</div>
+       </div>
+      
+    </div>
+    <hr/>
+
     <table class="table table-bordered">
       <thead>
         <tr>
@@ -73,23 +132,33 @@ button:hover, a:hover {
         </tr>
       </thead>
       <tbody>
-       
-          {{#each data.products}}
-            <tr>
-              <td>{{this.name}}</td>
-              <td>{{this.quantity}}</td>
-              <td>{{this.price}}</td>
-            </tr>
-         {{/each}}
-         <tr>
-            <td style="visibility: hidden;">Sub Total:Rs.******</td>
-            <td style="visibility: hidden;"> Sub Total:Rs.******</td>
-            <td>Sub Total:Rs.{{data.totalPrice}}/td>
-         </tr>
-      
+
+        {{#each data.products}}
+        <tr>
+          <td>{{this.name}}</td>
+          <td>{{this.quantity}}</td>
+          <td>{{this.price}}</td>
+        </tr>
+        {{/each}}
+        <tr>
+          <td colspan=2 style="text-align: right; font-weight:600;" >Sub Total:</td>
+          <td>Rs.{{data.totalPrice}}</td>
+        </tr>
+
+        <tr>
+          <td colspan=2 style="text-align: right; font-weight:600;" >Tax:</td>
+          <td>Rs.{{data.totalPrice}}</td>
+        </tr>
+
+        <tr>
+          <td colspan=2 style="text-align: right; font-weight:600;" >Total:</td>
+          <td>Rs.{{data.totalPrice}}</td>
+        </tr>
+
       </tbody>
     </table>
-</div>
+  </div>
 
 </body>
+
 </html>

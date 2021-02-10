@@ -31,7 +31,7 @@ router.post("/register", registerVerify, async (req, res) => {
 
   //CHECKING IF USER EMAIL ALREADY EXISTS
   const emailExist = await User.findOne({ email: req.body.email });
-  if (emailExist) res.status(400).send("Email already exists");
+  if (emailExist)   return res.status(400).send("Email already exists");
 
   //HASHING THE PASSWORD
 
@@ -93,7 +93,7 @@ router.post("/register", registerVerify, async (req, res) => {
     }
   } catch (error) {
     console.log("error while registering is: ", error);
-    res.status(400).send(error);
+    return  res.status(400).send(error);
   }
 });
 

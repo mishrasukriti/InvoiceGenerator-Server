@@ -1,6 +1,8 @@
 //ADMIN DASHBOARD
 
 //ADMIN CAN EDIT,VIEW,DELETE AND ADD
+const express = require("express");
+const app = express();
 
 path = require('path')
 bodyParser = require('body-parser');
@@ -8,6 +10,7 @@ var pdf = require("pdf-creator-node");
 var fs = require('fs');
 
 const router = require("express").Router();
+router.use(express.static(__dirname + 'GeneratedPDF'));
 const verify = require("./adminverfiy");
 const Invoice = require("../../models/Invoice");
 const User = require("../../models/User");
@@ -32,7 +35,15 @@ const invoiceSchema = Joi.object({
 //POST
 router.post("/invoice", verify, async (req, res) => {
   console.log("inside invoice initially mail of person adding req is: " + req.body.senderEmail);
-  const ticket = new Invoice({
+  var d = new Date();
+  let month = d.getMonth()+1;
+  let str = month;
+  if(month<9) str= "0" + str;
+  
+  var createdOn =  d.getFullYear() + "-" + str + "-" +  d.getDate() ;
+  console.log("date at the time of creation invoice is: ", createdOn);
+  let ticket = new Invoice({
+    create_time: createdOn,
     invoiceNumber: req.body.invoiceNumber,
     clientName: req.body.clientName,
     clientAddress: req.body.clientAddress,
@@ -50,8 +61,12 @@ router.post("/invoice", verify, async (req, res) => {
     if (error) return res.status(400).send(error.details[0].message);
     else {
       //NEW INVOICE  IS ADDED IN THE COLLECTION 
-      let currentDate = new Date();
-      ticket.create_time = new Date(currentDate.toISOString());
+      // let currentDate = new Date();
+
+      
+
+      // ticket.create_time = new Date(currentDate.toISOString());
+      // ticket.create_time = createdOn;
       let arr = req.body.products;
       let total = 0;
       for (let i = 0; i < arr.length; i++) {
@@ -111,7 +126,7 @@ router.get("/invoice", verify, async (req, res) => {
 router.delete("/invoice", verify, async (req, res) => {
   try {
     await Invoice.deleteOne({ _id: req.body._id });
-    res.status(200).send("deleted suuccesfully");
+    res.status(200).send({"msg": "deleted suuccesfully"});
   } catch (error) {
     console.log(error);
     res.status(400).send(error);
@@ -201,14 +216,15 @@ router.get("/getCount", verify, async (req, res) => {
 
 // API TO SEARCH INVOICE BASED ON INVOICE NUMBER
 
-router.get("/searchInvoice", verify, async (req, res) => {
+router.post("/searchInvoice", verify, async (req, res) => {
   try {
     const invoice = await Invoice.find({ invoiceNumber: req.body.invoiceNumber }).exec();
     res.status(200).send(invoice);
   } catch (error) {
-    console.log(error);
+    console.log("error in search is: ",error);
     res.status(400).send(error);
   }
+  
 });
 
 
@@ -219,8 +235,10 @@ router.post('/genearatePDF',  async (req, res) => {
   // Read HTML Template
   var html = fs.readFileSync('template.html', 'utf8');
   var options = {
-    format: "A3",
-    orientation: "portrait",
+    // format: "A3",
+    // orientation: "portrait",
+    width:"1366px",
+    height:"2000px",
     border: "10mm",
     header: {
       height: "45mm",
@@ -241,8 +259,9 @@ router.post('/genearatePDF',  async (req, res) => {
 
   pdf.create(document, options)
     .then(res1 => {
-      console.log(res1)
-      res.status(200).send("done !!")
+      console.log(res1);
+      let redirectURL = process.env.backendBaseURL + `/${req.body.invoiceNumber}.pdf`;
+      return res.status(200).send(redirectURL);
     })
     .catch(error => {
       console.error(error)

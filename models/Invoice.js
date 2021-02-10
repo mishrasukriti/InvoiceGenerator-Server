@@ -32,16 +32,14 @@ const invoiceSchema = new mongoose.Schema({
 
   
   dueDate: {
-    type: Date,
-    default: Date.now(),
+    type: String,
   },
 
   products: {
     type:Array
   },
   create_time:{
-    type: Date,
-    default: Date.now(),
+    type: String
   },
   totalPrice:{
     type: Number

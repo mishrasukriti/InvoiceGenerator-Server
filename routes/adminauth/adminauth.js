@@ -28,7 +28,7 @@ const loginSchema = Joi.object({
 router.post("/register", async (req, res) => {
   //CHECKING IF USER EMAIL ALREADY EXISTS
   const emailExist = await User.findOne({ email: req.body.email });
-  if (emailExist) res.status(400).send("Email already exists");
+  if (emailExist) return  res.status(400).send("Email already exists");
 
   //HASHING THE PASSWORD
 
@@ -88,7 +88,7 @@ router.post("/register", async (req, res) => {
     }
   } catch (error) {
     console.log("error while registering is: ", error);
-    res.status(400).send(error);
+    return  res.status(400).send(error);
   }
 });
 
@@ -219,11 +219,12 @@ router.put("/changePassword", async (req, res) => {
 
 router.delete("/deleteuser", verify, async (req, res) => {
   try {
+    console.log("inside deleteuser. Deleting: user email: " + JSON.stringify(req.body));
     const users = await User.deleteOne({ email: req.body.email });
     res.status(200).send("deleted succesfully");
   } 
   catch (error) {
-    console.log(error);
+    console.log("error in deleteuser catch ",error);
     res.status(400).send(error);
   }
 });
