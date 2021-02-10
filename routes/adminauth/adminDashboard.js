@@ -2,9 +2,6 @@
 
 //ADMIN CAN EDIT,VIEW,DELETE AND ADD
 
-// var express = require('express'),
-// app = express(),
-
 path = require('path')
 bodyParser = require('body-parser');
 var pdf = require("pdf-creator-node");

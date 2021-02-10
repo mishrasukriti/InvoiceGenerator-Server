@@ -220,7 +220,7 @@ router.put("/changePassword", async (req, res) => {
 router.delete("/deleteuser", verify, async (req, res) => {
   try {
     const users = await User.deleteOne({ email: req.body.email });
-    res.status(200).send("deleted suuccesfully");
+    res.status(200).send("deleted succesfully");
   } 
   catch (error) {
     console.log(error);
