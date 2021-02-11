@@ -43,6 +43,10 @@ const invoiceSchema = new mongoose.Schema({
   },
   totalPrice:{
     type: Number
+  },
+  invoice_create_time:{
+    type: Date,
+    default: new Date().toISOString()
   }
 
 

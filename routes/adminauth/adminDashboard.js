@@ -196,7 +196,7 @@ router.get("/getCount", verify, async (req, res) => {
     oneDay.setDate(oneDay.getDate() - 1);
 
     const tickets = await Invoice.find({
-      create_time: {
+      invoice_create_time: {
         $gte: new Date(oneDay.toISOString()),
         $lte: new Date(currentDate.toISOString())
       }
