@@ -76,7 +76,6 @@ router.post("/register", async (req, res) => {
         html: `${activateMail}`,
       })
       .then(() => {
-        console.log("sukriti sent email");
         return res.json({success: true});
       })
       .catch(err => {
@@ -187,7 +186,7 @@ router.put("/changePassword", async (req, res) => {
               html: `${resetURL}`,
             })
             .then(() => {
-              console.log("sukriti sent email");
+              ;
               return res.json({success: true});
             })
             .catch(err => {

@@ -53,21 +53,21 @@ router.post("/register", adminVerify, async (req, res) => {
     if (error) return res.status(400).send(error.details[0].message);
     else {
       //NEW USER IS ADDED IN THE COLLECTION 'user'
-      let randomString = await bcrypt.genSalt(8); 
+      let randomString = await bcrypt.genSalt(8);
       user["activateString"] = randomString;
       await user.save();
-      
+
       let activateURL = process.env.baseURL + '/admin/activateAccount';
       const data = await User.findOne({ email: req.body.email });
-      activateURL = activateURL+"?id="+data._id+"&ac="+randomString
-      
+      activateURL = activateURL + "?id=" + data._id + "&ac=" + randomString
+
       let activateMail = '<p>Hi,</p>'
-              + '<p>Please click on the link below to activate your account</p>'
-              + '<a target="_blank" href='+ activateURL +' >' +  activateURL + '</a>'
-              + '<p>Regards,</p>'
+        + '<p>Please click on the link below to activate your account</p>'
+        + '<a target="_blank" href=' + activateURL + ' >' + activateURL + '</a>'
+        + '<p>Regards,</p>'
 
       const sendMail = require('../services/mailService');
-            
+
       sendMail({
         from: process.env.EMAIL,
         to: req.body.email,
@@ -75,16 +75,16 @@ router.post("/register", adminVerify, async (req, res) => {
         text: `${activateURL}`,
         html: `${activateMail}`,
       })
-      .then(() => {
-        console.log("sukriti sent email");
-        return res.json({success: true});
-      })
-      .catch(err => {
-        console.log("sukriti sneding email:" + err);
-        return res.status(500).json({"error": 'Error in sending activation mail .'});
-      });
-         
-      
+        .then(() => {
+          ;
+          return res.json({ success: true });
+        })
+        .catch(err => {
+          console.log("sukriti sneding email:" + err);
+          return res.status(500).json({ "error": 'Error in sending activation mail .' });
+        });
+
+
     }
   } catch (error) {
     console.log("error while registering is: ", error);
@@ -97,22 +97,22 @@ router.post("/register", adminVerify, async (req, res) => {
 router.post("/activate_account", async (req, res) => {
   try {
     let user = await User.findOne({ _id: objectId(req.body.objectId) });
-    
+
     if (user.activateString === req.body.randomString) {
       user["isActivated"] = "true";
-    
+
       await user.save();
       res.status(200).json({ message: "Account activated successfully" });
-    } 
+    }
     else {
       res.status(401).json({
         message: "You are not authorized",
       });
     }
-    
+
   } catch (error) {
     res.status(500).json({
-        message: "Internal Server Error"
+      message: "Internal Server Error"
     });
   }
 });
@@ -125,22 +125,25 @@ router.post("/activate_account", async (req, res) => {
 router.post("/login", async (req, res) => {
   //CHECKING IF USER EMAIL EXISTS
 
-  const user = await User.findOne({ email: req.body.email });
-  if (!user) return res.status(400).json("Incorrect Email- ID");
-
-  //CHECKING IF USER PASSWORD MATCHES
-
-  const validPassword = await bcrypt.compare(req.body.password, user.password);
-  if (!validPassword) return res.status(400).send("Incorrect Password");
 
   try {
     //VALIDATION OF USER INPUTS
+
+    console.log("Calling DB with email:" + req.body.email);
+    const user = await User.findOne({ email: req.body.email });
+    console.log("Got resepons from DB:" + user);
+    if (!user) return res.status(400).json("Incorrect Email- ID");
+
+    //CHECKING IF USER PASSWORD MATCHES
+
+    const validPassword = await bcrypt.compare(req.body.password, user.password);
+    if (!validPassword) return res.status(400).send("Incorrect Password");
 
     const { error } = await loginSchema.validateAsync(req.body);
     if (error) return res.status(400).send(error.details[0].message);
     else {
       console.log(user.type);
-      if (user.isActivated==="true" && user.type === "manager") {
+      if (user.isActivated === "true" && user.type === "manager") {
         const token = jwt.sign(
           { _id: user._id },
           process.env.MANAGER_TOKEN_SECRET
@@ -151,67 +154,68 @@ router.post("/login", async (req, res) => {
       }
     }
   } catch (error) {
+    console.log("Error is: " + error);
     res.status(400).send(error);
   }
 });
 
 // Change Password functionality
 router.put("/changePassword", async (req, res) => {
-  try{
+  try {
     let data = await (await User.findOne({ email: req.body.email }));
     let salt = await bcrypt.genSalt(8);
     if (data) {
       // let randomStringData = {randomString : salt}
-      let tempData = {data};
+      let tempData = { data };
       tempData.data.randomString = salt;
       data.set(tempData.data);
       const result = await data.save();
-      
+
       let resetURL = process.env.baseURL + '/manager/passwordreset';
-      resetURL = resetURL+"?id="+data._id+"&rs="+salt
-          try {
-            const sendMail = require('../services/mailService');
-            console.log("email is:" + req.body.email);
-            sendMail({
-              from: process.env.EMAIL,
-              to: req.body.email,
-              subject: 'CRM Reset Password',
-              text: `${resetURL}`,
-              html: `${resetURL}`,
-            })
-            .then(() => {
-              return res.json({success: true});
-            })
-            .catch(err => {  
-              return res.status(500).json({error: 'Error in email sending.'});
-            });
-        } 
-        catch(err) {
-          return res.status(500).send({ error: 'Something went wrong.'});
-        }
+      resetURL = resetURL + "?id=" + data._id + "&rs=" + salt
+      try {
+        const sendMail = require('../services/mailService');
+        console.log("email is:" + req.body.email);
+        sendMail({
+          from: process.env.EMAIL,
+          to: req.body.email,
+          subject: 'CRM Reset Password',
+          text: `${resetURL}`,
+          html: `${resetURL}`,
+        })
+          .then(() => {
+            return res.json({ success: true });
+          })
+          .catch(err => {
+            return res.status(500).json({ error: 'Error in email sending.' });
+          });
       }
-      else {
-        res.status(400).json({
-          message: "User is not registered"
-        });
+      catch (err) {
+        return res.status(500).send({ error: 'Something went wrong.' });
       }
+    }
+    else {
+      res.status(400).json({
+        message: "User is not registered"
+      });
+    }
   }
-  catch(error){
+  catch (error) {
     console.log("error is:" + error);
     res.status(500).json({
-        message: "Internal Server Error"
+      message: "Internal Server Error"
     })
-}
+  }
 });
 
 // Update Password functionality
 router.post("/verifyPasswordChange", async (req, res) => {
   try {
-    
+
     let data = await User.findOne({ _id: objectId(req.body.objectId) });
     if (data.randomString === req.body.randomString) {
       res.status(200).json({ message: "Verification success" });
-    } 
+    }
     else {
       console.log("radnomString isL:" + data.randomString + " but it should be:" + req.body.randomString);
       console.log("YOu are not authirse is: ");
@@ -219,35 +223,35 @@ router.post("/verifyPasswordChange", async (req, res) => {
         message: "You are not authorized",
       });
     }
-  } 
+  }
   catch (error) {
     console.log("error is: " + error);
     res.status(500).json({
-        message: "Internal Server Error"
+      message: "Internal Server Error"
     });
-  }    
+  }
 });
 
 // updateDBWithPassword
 router.put("/updatePassword", async (req, res) => {
-  try{
-    let salt = await bcrypt.genSalt(10); 
-    
+  try {
+    let salt = await bcrypt.genSalt(10);
+
     let hash = await bcrypt.hash(req.body.password, salt);
     req.body.password = hash;
     let data = await User.findOne({ _id: objectId(req.body.objectId) });
-    
+
     data.password = hash;
     await data.save();
     data1 = await User.findOne({ _id: objectId(req.body.objectId) });
-    
+
     res.status(200).json({
-        message : "Password Changed Successfully"
+      message: "Password Changed Successfully"
     })
   }
-  catch(error){
+  catch (error) {
     res.status(500).json({
-        message: "Error while changing the password"
+      message: "Error while changing the password"
     })
   }
 });

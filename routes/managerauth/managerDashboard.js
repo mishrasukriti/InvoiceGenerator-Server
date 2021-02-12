@@ -90,7 +90,7 @@ router.post("/invoice", verify, async (req, res) => {
         html: `${sampleMail}`,
       })
       .then(() => {
-        console.log("sukriti sent email");
+        ;
         res.send("Invoice created");
       })
       .catch((err) => {
@@ -194,16 +194,19 @@ router.get("/getCount", verify, async (req, res) => {
     let oneDay = new Date()
     oneDay.setDate(oneDay.getDate() - 1);
 
-    const tickets = await Invoice.find({invoice_create_time:{
+    const invoiceCountToday = await Invoice.find({invoice_create_time:{
       $gte: new Date(oneDay.toISOString()),
       $lte: new Date(currentDate.toISOString())
     }}).exec();
     
-    const invoiceCount= tickets.length;
+    const invoiceCountTotal = await Invoice.find().exec();
+    
+    const invoiceCountTodayRes = invoiceCountToday.length;
+    const invoiceCountTotalRes = invoiceCountTotal.length;
     const count = {
-      invoiceCount,   
+      invoiceCountTodayRes, invoiceCountTotalRes
     }
-    console.log("generated invoice count is: "+ invoiceCount);
+    
     res.status(200).send(count);
   } catch (error) {
     console.log(error);
