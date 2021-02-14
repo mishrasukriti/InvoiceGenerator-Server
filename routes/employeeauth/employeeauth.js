@@ -145,7 +145,7 @@ router.post("/login", async (req, res) => {
 
     //VALIDATION OF USER INPUTS
     const { error } = await loginSchema.validateAsync(req.body);
-    // console.log("reaching here: ");
+    
     if (error) return res.status(400).send(error.details[0].message);
     else {
       if (user.isActivated==="true" && user.type === "employee") {

@@ -76,7 +76,6 @@ router.post("/register", adminVerify, async (req, res) => {
         html: `${activateMail}`,
       })
         .then(() => {
-          ;
           return res.json({ success: true });
         })
         .catch(err => {
@@ -129,9 +128,8 @@ router.post("/login", async (req, res) => {
   try {
     //VALIDATION OF USER INPUTS
 
-    console.log("Calling DB with email:" + req.body.email);
     const user = await User.findOne({ email: req.body.email });
-    console.log("Got resepons from DB:" + user);
+    
     if (!user) return res.status(400).json("Incorrect Email- ID");
 
     //CHECKING IF USER PASSWORD MATCHES
@@ -165,7 +163,7 @@ router.put("/changePassword", async (req, res) => {
     let data = await (await User.findOne({ email: req.body.email }));
     let salt = await bcrypt.genSalt(8);
     if (data) {
-      // let randomStringData = {randomString : salt}
+      
       let tempData = { data };
       tempData.data.randomString = salt;
       data.set(tempData.data);

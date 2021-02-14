@@ -61,12 +61,7 @@ router.post("/invoice", verify, async (req, res) => {
     if (error) return res.status(400).send(error.details[0].message);
     else {
       //NEW INVOICE  IS ADDED IN THE COLLECTION 
-      // let currentDate = new Date();
-
       
-
-      // ticket.create_time = new Date(currentDate.toISOString());
-      // ticket.create_time = createdOn;
       let arr = req.body.products;
       let total = 0;
       for (let i = 0; i < arr.length; i++) {

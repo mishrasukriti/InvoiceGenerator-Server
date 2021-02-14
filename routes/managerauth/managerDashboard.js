@@ -61,8 +61,6 @@ router.post("/invoice", verify, async (req, res) => {
     }
     else {
       //NEW INVOICE  IS ADDED
-      // let currentDate = new Date();
-      // ticket.create_time = new Date(currentDate.toISOString());
       let arr = req.body.products;
       let total = 0;
       for(let i=0; i<arr.length; i++){
@@ -73,7 +71,7 @@ router.post("/invoice", verify, async (req, res) => {
       ticket.totalPrice = total;
       await ticket.save();
 
-      console.log("mail of person adding req is: "+ req.body.senderEmail);
+      // console.log("mail of person adding req is: "+ req.body.senderEmail);
       const senderEmail = req.body.senderEmail;
 
       let sampleMail = '<p>Hi, </p>'
@@ -234,8 +232,6 @@ router.post('/genearatePDF',  async (req, res) => {
   // Read HTML Template
   var html = fs.readFileSync('template.html', 'utf8');
   var options = {
-    // format: "A3",
-    // orientation: "portrait",
     width:"1366px",
     height:"2000px",
     border: "10mm",
