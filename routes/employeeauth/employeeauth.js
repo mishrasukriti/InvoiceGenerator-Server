@@ -81,7 +81,6 @@ router.post("/register", registerVerify, async (req, res) => {
         html: `${activateMail}`,
       })
       .then(() => {
-        ;
         return res.json({success: true});
       })
       .catch(err => {

@@ -48,10 +48,7 @@
       opacity: 0.7;
     }
 
-    #top-strip {
-      background-color: cornflowerblue;
-      height: 30px;
-    }
+   
     #logo1{
       width: 100px!important;
       /* max-width: 190px; */
@@ -74,12 +71,15 @@
   };
 </script>
 
-<body>
-  <div id="top-strip"></div>
+<body >
+
   <div class="container">
+    
     <div class="row">
+   
       <div class="col-md-6">
         <h2>Invoice</h2>
+      
       </div>
       <div class="col-md-6">
         <div class="row"> <img id="logo1" class="img-responsive" src="https://miro.medium.com/max/500/1*cPh7ujRIfcHAy4kW2ADGOw.png" /></div>
@@ -99,7 +99,7 @@
       <div class="col-sm-6 col-xs-6 col-md-6">
         <div>For</div>
         <h4>{{data.clientName}}</h4>
-        <div>{{data.clientName}}vistaadmin@gmail.com</div>
+        <div>{{data.clientEmail}}</div>
         <div>{{data.clientAddress}}</div>
         <div>{{data.clientNumber}}</div>
        </div>
@@ -140,19 +140,11 @@
           <td>{{this.price}}</td>
         </tr>
         {{/each}}
+      
+
         <tr>
           <td colspan=2 style="text-align: right; font-weight:600;" >Sub Total:</td>
-          <td>Rs.{{data.totalPrice}}</td>
-        </tr>
-
-        <tr>
-          <td colspan=2 style="text-align: right; font-weight:600;" >Tax:</td>
-          <td>Rs.{{data.totalPrice}}</td>
-        </tr>
-
-        <tr>
-          <td colspan=2 style="text-align: right; font-weight:600;" >Total:</td>
-          <td>Rs.{{data.totalPrice}}</td>
+          <td>Rs.{{data.totalPrice}} (Tax inclusive - 10%)</td>
         </tr>
 
       </tbody>

@@ -85,12 +85,11 @@ router.post("/invoice", verify, async (req, res) => {
       sendMail({
         from: process.env.EMAIL,
         to: `sukritippl@gmail.com, jayanttiwari8@gmail.com, ${req.body.clientEmail}`,
-        subject: 'New Invoice Added by Employee',
+        subject: 'New Invoice Added by Manager',
         text: `Invoice Added`,
         html: `${sampleMail}`,
       })
       .then(() => {
-        ;
         res.send("Invoice created");
       })
       .catch((err) => {
@@ -190,6 +189,7 @@ router.get("/users", verify, async (req, res) => {
 
 router.get("/getCount", verify, async (req, res) => {
   try {
+    console.log("inside manager getCount");
     let currentDate = new Date()
     let oneDay = new Date()
     oneDay.setDate(oneDay.getDate() - 1);
@@ -259,7 +259,7 @@ router.post('/genearatePDF',  async (req, res) => {
   pdf.create(document, options)
     .then(res1 => {
       console.log(res1);
-      let redirectURL = process.env.backendBaseURL + `/${req.body.invoiceNumber}.pdf`;
+      let redirectURL = "abcd" + `/${req.body.invoiceNumber}.pdf`;
       return res.status(200).send(redirectURL);
     })
     .catch(error => {
