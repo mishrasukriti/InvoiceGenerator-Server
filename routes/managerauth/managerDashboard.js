@@ -259,7 +259,7 @@ router.post('/genearatePDF',  async (req, res) => {
   pdf.create(document, options)
     .then(res1 => {
       console.log(res1);
-      let redirectURL = "abcd" + `/${req.body.invoiceNumber}.pdf`;
+      let redirectURL = process.env.backendBaseURL + `/${req.body.invoiceNumber}.pdf`;
       return res.status(200).send(redirectURL);
     })
     .catch(error => {
