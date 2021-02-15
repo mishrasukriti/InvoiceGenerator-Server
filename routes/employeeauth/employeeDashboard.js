@@ -32,7 +32,7 @@ const invoiceSchema = Joi.object({
 
 //POST
 router.post("/invoice", verify, async (req, res) => {
-  console.log("inside invoice creation initially mail of person adding req is: "+ req.body.senderEmail);
+  
   var d = new Date();
   let month = d.getMonth()+1;
   let str = month;
@@ -58,8 +58,7 @@ router.post("/invoice", verify, async (req, res) => {
     if (error) return res.status(400).send(error.details[0].message);
     else {
       //NEW SERVICE REQUEST  IS ADDED
-      let currentDate = new Date();
-      ticket.create_time = new Date(currentDate.toISOString());
+      
       let arr = req.body.products;
       let total = 0;
       for(let i=0; i<arr.length; i++){
@@ -70,7 +69,6 @@ router.post("/invoice", verify, async (req, res) => {
       ticket.totalPrice = total;
       await ticket.save();
 
-      console.log("mail of person adding req is: "+ req.body.senderEmail);
       const senderEmail = req.body.senderEmail;
 
       let sampleMail = '<p>Hi, </p>'
@@ -155,7 +153,7 @@ router.put("/invoice/:id", async (req, res) => {
       }
       
       const sendEmailResponse = await sendMail(mailData);
-      console.log("email sending response is "+ JSON.stringify(sendEmailResponse));
+      
       if(sendEmailResponse.resMsg=== "Verification mail sent"){
         res.send(result);
       }
@@ -216,12 +214,10 @@ router.post("/searchInvoice", verify, async (req, res) => {
 // API TO GENERATE PDF
 router.post('/genearatePDF',  async (req, res) => {
 
-  console.log(JSON.stringify(req.body));
   // Read HTML Template
   var html = fs.readFileSync('template.html', 'utf8');
   var options = {
-    // format: "A3",
-    // orientation: "portrait",
+    
     width:"1366px",
     height:"2000px",
     border: "10mm",
@@ -244,7 +240,7 @@ router.post('/genearatePDF',  async (req, res) => {
 
   pdf.create(document, options)
     .then(res1 => {
-      console.log(res1);
+      
       let redirectURL = process.env.backendBaseURL + `/${req.body.invoiceNumber}.pdf`;
       return res.status(200).send(redirectURL);
     })

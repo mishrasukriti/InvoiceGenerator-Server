@@ -33,7 +33,6 @@ const invoiceSchema = Joi.object({
 
 //POST
 router.post("/invoice", verify, async (req, res) => {
-  console.log("inside invoice api initially mail of person adding req is: "+ req.body.senderEmail);
   var d = new Date();
   let month = d.getMonth()+1;
   let str = month;
@@ -187,7 +186,7 @@ router.get("/users", verify, async (req, res) => {
 
 router.get("/getCount", verify, async (req, res) => {
   try {
-    console.log("inside manager getCount");
+    
     let currentDate = new Date()
     let oneDay = new Date()
     oneDay.setDate(oneDay.getDate() - 1);
@@ -228,7 +227,6 @@ router.post("/searchInvoice", verify, async (req, res) => {
 // API TO GENERATE PDF
 router.post('/genearatePDF',  async (req, res) => {
 
-  console.log(JSON.stringify(req.body));
   // Read HTML Template
   var html = fs.readFileSync('template.html', 'utf8');
   var options = {
@@ -254,7 +252,6 @@ router.post('/genearatePDF',  async (req, res) => {
 
   pdf.create(document, options)
     .then(res1 => {
-      console.log(res1);
       let redirectURL = process.env.backendBaseURL + `/${req.body.invoiceNumber}.pdf`;
       return res.status(200).send(redirectURL);
     })
