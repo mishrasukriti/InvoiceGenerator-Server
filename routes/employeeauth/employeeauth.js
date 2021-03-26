@@ -76,7 +76,7 @@ router.post("/register", registerVerify, async (req, res) => {
       sendMail({
         from: process.env.EMAIL,
         to: req.body.email,
-        subject: 'CRM Account Activation',
+        subject: 'InvoiceGenerator Account Activation',
         text: `${activateURL}`,
         html: `${activateMail}`,
       })
@@ -190,7 +190,7 @@ router.put("/changePassword", async (req, res) => {
             sendMail({
               from: process.env.EMAIL,
               to: req.body.email,
-              subject: 'CRM Reset Password',
+              subject: 'InvoiceGenerator Reset Password',
               text: `${resetURL}`,
               html: `${resetURL}`,
             })
